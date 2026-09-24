@@ -1,0 +1,8 @@
+services:
+  chess-trainer:
+    build: .
+    ports:
+      - "43117:43117"
+    environment:
+      STOCKFISH_PATH: /usr/games/stockfish
+    restart: unless-stopped

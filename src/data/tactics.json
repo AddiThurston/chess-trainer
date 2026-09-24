@@ -1,0 +1,226 @@
+[
+  {
+    "id": "m1-smother",
+    "fen": "6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 1",
+    "comment": "The knight lands on f7, and Black's own rook and pawns take away every flight square.",
+    "solution": ["Nf7#"]
+  },
+  {
+    "id": "m1-scholars",
+    "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+    "side": "w",
+    "theme": "mate in 1",
+    "comment": "The queen and the bishop meet on f7. That is mate, not a check you can step away from.",
+    "solution": ["Qxf7#"]
+  },
+  {
+    "id": "m1-rook-edge",
+    "fen": "3k4/R7/3K4/8/8/8/8/8 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 1",
+    "comment": "The rook checks along the eighth rank while your king covers the flight squares.",
+    "solution": ["Ra8#"]
+  },
+  {
+    "id": "m1-queen-back",
+    "fen": "6k1/5ppp/5Q2/8/8/8/5PPP/6K1 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 1",
+    "comment": "The queen slides to d8. The pawns on f7, g7, and h7 leave the king no air.",
+    "solution": ["Qd8#"]
+  },
+  {
+    "id": "m1-queen-corner",
+    "fen": "k7/2Q5/1K6/8/8/8/8/8 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 1",
+    "comment": "The queen checks from c8, and your king on b6 covers a7 and b7.",
+    "solution": ["Qc8#"]
+  },
+  {
+    "id": "m1-queen-knight",
+    "fen": "7k/5Qpp/6N1/8/8/8/8/6K1 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 1",
+    "comment": "The queen reaches e8. The knight on g6 covers the king's remaining squares.",
+    "solution": ["Qe8#"]
+  },
+  {
+    "id": "m2-rook-cut",
+    "fen": "k7/8/1K6/8/8/8/8/1R6 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 2",
+    "comment": "Step the king to c7 first. After Black goes to a7, the rook mates on the first rank.",
+    "solution": ["Kc7", "Ka7", "Ra1#"]
+  },
+  {
+    "id": "m2-queen-box",
+    "fen": "7k/8/6K1/8/8/8/8/6Q1 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 2",
+    "comment": "Bring the king to f7. When the black king steps to h7, the queen mates on g7.",
+    "solution": ["Kf7", "Kh7", "Qg7#"]
+  },
+  {
+    "id": "m2-rook-file",
+    "fen": "1k6/8/1K6/8/8/8/8/2R5 w - - 0 1",
+    "side": "w",
+    "theme": "mate in 2",
+    "comment": "Move the king to a6 so the rook can mate along the c-file.",
+    "solution": ["Ka6", "Ka8", "Rc8#"]
+  },
+  {
+    "id": "m2-legal",
+    "fen": "r2qkbnr/ppp2ppp/2np4/4N3/2B1P3/2N4P/PPPP1PP1/R1BbK2R w KQkq - 0 7",
+    "side": "w",
+    "theme": "mate in 2",
+    "comment": "This is Légal's mate. The bishop checks on f7, and the knight finishes on d5.",
+    "solution": ["Bxf7+", "Ke7", "Nd5#"]
+  },
+  {
+    "id": "fork-queen",
+    "fen": "6k1/8/8/8/1n6/8/8/R1K1Q3 b - - 0 1",
+    "side": "b",
+    "theme": "fork",
+    "comment": "The knight on d3 checks the king and attacks the queen on e1 at the same time.",
+    "solution": ["Nd3+", "Kd1", "Nxe1"]
+  },
+  {
+    "id": "fork-rook",
+    "fen": "6k1/8/8/8/3n4/8/8/R3K3 b - - 0 1",
+    "side": "b",
+    "theme": "fork",
+    "comment": "Nc2 checks the king on e1 and forks the rook sitting on a1.",
+    "solution": ["Nc2+", "Kd1", "Nxa1"]
+  },
+  {
+    "id": "fork-protected",
+    "fen": "r3k3/8/8/B2N4/8/8/8/4K3 w - - 0 1",
+    "side": "w",
+    "theme": "fork",
+    "comment": "The knight jumps to c7, checking the king and eyeing the rook, with the bishop guarding the knight.",
+    "solution": ["Nc7+", "Kd7", "Nxa8"]
+  },
+  {
+    "id": "fork-queen-check",
+    "fen": "r3k3/8/8/8/8/8/8/3QK3 w - - 0 1",
+    "side": "w",
+    "theme": "fork",
+    "comment": "The queen on a4 checks along the diagonal and attacks the rook on a8 down the file.",
+    "solution": ["Qa4+", "Kd8", "Qxa8+"]
+  },
+  {
+    "id": "pin-pawn",
+    "fen": "3qk3/8/5n2/4P1B1/8/8/8/4K3 w - - 0 1",
+    "side": "w",
+    "theme": "pin",
+    "comment": "The bishop on g5 pins the knight to the queen, so the pawn can take on f6.",
+    "solution": ["exf6", "Qxf6"]
+  },
+  {
+    "id": "pin-rook",
+    "fen": "4k3/8/2n5/1B6/8/8/8/3RK3 w - - 0 1",
+    "side": "w",
+    "theme": "pin",
+    "comment": "The bishop pins the knight to the king. Swing the rook to the c-file and the knight cannot step off.",
+    "solution": ["Rc1", "Kd7", "Rxc6+"]
+  },
+  {
+    "id": "pin-bishop-take",
+    "fen": "4k3/8/2n5/1B6/8/5N2/8/4K3 w - - 0 1",
+    "side": "w",
+    "theme": "pin",
+    "comment": "The knight on c6 is pinned to the king. The bishop takes it with check.",
+    "solution": ["Bxc6+"]
+  },
+  {
+    "id": "skewer-rank",
+    "fen": "8/8/q1k5/8/8/8/8/4K2R w - - 0 1",
+    "side": "w",
+    "theme": "skewer",
+    "comment": "The rook checks along the sixth rank. The king must step aside, and the queen behind him falls.",
+    "solution": ["Rh6+", "Kb5", "Rxa6"]
+  },
+  {
+    "id": "skewer-eighth",
+    "fen": "q3k3/8/8/8/8/8/8/4K2R w - - 0 1",
+    "side": "w",
+    "theme": "skewer",
+    "comment": "A check on the eighth rank drives the king off, and the queen on a8 is lost.",
+    "solution": ["Rh8+", "Kd7", "Rxa8"]
+  },
+  {
+    "id": "disc-knight-queen",
+    "fen": "4k3/8/2q5/4N3/8/8/8/4R1K1 w - - 0 1",
+    "side": "w",
+    "theme": "discovered attack",
+    "comment": "The knight takes the queen on c6, and the rook behind it checks the king on the open e-file.",
+    "solution": ["Nxc6+"]
+  },
+  {
+    "id": "disc-bishop-queen",
+    "fen": "q3k3/8/8/8/4B3/8/8/4R1K1 w - - 0 1",
+    "side": "w",
+    "theme": "discovered attack",
+    "comment": "The bishop takes the queen on a8 and uncovers a rook check along the e-file.",
+    "solution": ["Bxa8+"]
+  },
+  {
+    "id": "disc-knight-f6",
+    "fen": "4k3/8/5q2/8/4N3/8/8/4R1K1 w - - 0 1",
+    "side": "w",
+    "theme": "discovered attack",
+    "comment": "The knight captures on f6 with check because the rook is revealed behind it.",
+    "solution": ["Nxf6+"]
+  },
+  {
+    "id": "br-rook",
+    "fen": "6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1",
+    "side": "w",
+    "theme": "back rank",
+    "comment": "The rook reaches the eighth rank. Black's own pawns block every flight square.",
+    "solution": ["Re8#"]
+  },
+  {
+    "id": "br-ignore-queen",
+    "fen": "6k1/5ppp/8/8/8/8/3q1PPP/4R1K1 w - - 0 1",
+    "side": "w",
+    "theme": "back rank",
+    "comment": "The queen on d1 looks threatening, but the rook mates on e8 before it matters.",
+    "solution": ["Re8#"]
+  },
+  {
+    "id": "br-queen",
+    "fen": "6k1/pp3ppp/8/8/8/8/PPP1QPPP/2K1R3 w - - 0 1",
+    "side": "w",
+    "theme": "back rank",
+    "comment": "The queen mates on e8. The black pawns leave the king no room on the back rank.",
+    "solution": ["Qe8#"]
+  },
+  {
+    "id": "br-two-rooks",
+    "fen": "7k/5ppp/8/8/8/8/5PPP/4RRK1 w - - 0 1",
+    "side": "w",
+    "theme": "back rank",
+    "comment": "One rook is enough. Re8 is mate because the king has no air on the eighth rank.",
+    "solution": ["Re8#"]
+  },
+  {
+    "id": "br-take-rook",
+    "fen": "3r2k1/ppp2ppp/8/8/8/8/PPP2PPP/3RR1K1 w - - 0 1",
+    "side": "w",
+    "theme": "back rank",
+    "comment": "The d-file rook takes on d8 with check. The black rook on the back rank cannot be saved.",
+    "solution": ["Rdxd8+"]
+  },
+  {
+    "id": "m2-rook-other",
+    "fen": "k7/8/2K5/8/8/8/8/7R w - - 0 1",
+    "side": "w",
+    "theme": "mate in 2",
+    "comment": "Walk the king to c7. After Ka7, the rook mates from a1.",
+    "solution": ["Kc7", "Ka7", "Ra1#"]
+  }
+]
