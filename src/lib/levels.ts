@@ -72,3 +72,33 @@ export const levels: Record<LevelId, Level> = {
 export function isLevelId(value: string): value is LevelId {
   return (levelIds as readonly string[]).includes(value);
 }
+
+/** Full-strength search used when the opponent must play the position correctly. */
+export const exactSearch = {
+  skill: 20,
+  elo: 3200,
+  depth: 18,
+  movetime: 2500,
+  limitStrength: false,
+};
+
+export type SearchConfig = {
+  skill: number;
+  elo: number;
+  depth: number;
+  movetime: number;
+  limitStrength: boolean;
+};
+
+export function searchConfig(level: string): SearchConfig | null {
+  if (level === "exact") return exactSearch;
+  if (!isLevelId(level)) return null;
+  const found = levels[level];
+  return {
+    skill: found.skill,
+    elo: found.elo,
+    depth: found.depth,
+    movetime: found.movetime,
+    limitStrength: found.limitStrength,
+  };
+}

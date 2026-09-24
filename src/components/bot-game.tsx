@@ -10,7 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { playEngine, probeBinary, type EngineSource } from "@/lib/engine-client";
+import { bookMove } from "@/data/openings";
 import { levelIds, levels, type LevelId } from "@/lib/levels";
+import { EvalBar } from "@/components/eval-bar";
+import { CoachToggles, GradeLine, useCoachOptions, usePositionEval } from "@/components/coach-options";
+import { ratePlayedMove } from "@/lib/rate-move";
+import type { GradeName } from "@/lib/eval";
 
 type StartChoice = { id: string; label: string; moves: string[] };
 
@@ -52,6 +57,9 @@ export function BotGame() {
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<EngineSource | null>(null);
   const [binary, setBinary] = useState<boolean | null>(null);
+  const [grades, setGrades] = useState<{ san: string; grade: GradeName }[]>([]);
+  const { showEval, rateMoves, toggleEval, toggleRate } = useCoachOptions();
+  const whiteCp = usePositionEval(fen, showEval);
 
   const user = color === "white" ? "w" : "b";
   const turn = new Chess(fen).turn();
@@ -76,6 +84,7 @@ export function BotGame() {
     setResult(done);
     setError(null);
     setSource(null);
+    setGrades([]);
     setStatus(done ?? (chess.turn() === side ? "Your move." : "The bot is thinking…"));
   }
 
@@ -94,9 +103,11 @@ export function BotGame() {
     const chess = new Chess(fen);
     if (chess.turn() === user || chess.isGameOver()) return;
     const requestId = ++requestRef.current;
+    const fenBefore = fen;
+    const history = sans;
     let cancelled = false;
     playEngine(fen, level)
-      .then((reply) => {
+      .then(async (reply) => {
         if (cancelled || requestId !== requestRef.current) return;
         const played = chess.move(reply.san);
         if (!played) throw new Error("The bot played an illegal move.");
@@ -105,6 +116,12 @@ export function BotGame() {
         setFen(chess.fen());
         setSans((current) => [...current, played.san]);
         setLastMove({ from: played.from, to: played.to });
+        if (rateMoves && reply.uci) {
+          const grade = await ratePlayedMove(fenBefore, reply.uci, bookMove(history, played.san));
+          if (!cancelled && requestId === requestRef.current) {
+            setGrades((current) => [...current, { san: played.san, grade }]);
+          }
+        }
         const done = describe(chess, user);
         setResult(done);
         setStatus(done ?? "Your move.");
@@ -117,10 +134,12 @@ export function BotGame() {
     return () => {
       cancelled = true;
     };
-  }, [fen, result, error, user, level]);
+  }, [fen, result, error, user, level, rateMoves, sans]);
 
   function onMove(move: { from: string; to: string; promotion?: string }) {
     if (result || error || turn !== user) return false;
+    const fenBefore = fen;
+    const history = sans;
     const chess = new Chess(fen);
     let played;
     try {
@@ -136,6 +155,12 @@ export function BotGame() {
     setFen(chess.fen());
     setSans((current) => [...current, played.san]);
     setLastMove({ from: played.from, to: played.to });
+    if (rateMoves) {
+      const uci = `${played.from}${played.to}${played.promotion ?? ""}`;
+      void ratePlayedMove(fenBefore, uci, bookMove(history, played.san)).then((grade) => {
+        setGrades((current) => [...current, { san: played.san, grade }]);
+      });
+    }
     const done = describe(chess, user);
     setResult(done);
     setStatus(done ?? "The bot is thinking…");
@@ -149,16 +174,19 @@ export function BotGame() {
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,640px)_minmax(280px,1fr)]">
-      <div>
-        <TrainerBoard
-          fen={fen}
-          orientation={color}
-          playerColor={user}
-          interactive={!thinking && !result && !error && turn === user}
-          lastMove={lastMove}
-          boardId="bot"
-          onMove={onMove}
-        />
+      <div className="flex items-stretch gap-2">
+        {showEval ? <EvalBar whiteCp={whiteCp} orientation={color} /> : null}
+        <div className="min-w-0 flex-1">
+          <TrainerBoard
+            fen={fen}
+            orientation={color}
+            playerColor={user}
+            interactive={!thinking && !result && !error && turn === user}
+            lastMove={lastMove}
+            boardId="bot"
+            onMove={onMove}
+          />
+        </div>
       </div>
       <Card>
         <CardHeader>
@@ -201,6 +229,14 @@ export function BotGame() {
           </div>
           <p className="min-h-12">{result ?? (thinking ? `${levels[level].label} is thinking…` : status)}</p>
           {result ? <Badge>{result}</Badge> : null}
+          {rateMoves && grades.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {grades.slice(-6).map((item, index) => (
+                <GradeLine key={`${item.san}-${index}`} san={item.san} grade={item.grade} />
+              ))}
+            </div>
+          ) : null}
+          <CoachToggles showEval={showEval} rateMoves={rateMoves} onEval={toggleEval} onRate={toggleRate} />
           <EngineNote binary={binary} source={source} error={error} />
           <div className="flex flex-wrap gap-2">
             <Button className="min-h-11" onClick={() => begin(startId, color)}>

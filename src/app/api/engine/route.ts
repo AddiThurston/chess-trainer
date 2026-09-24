@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { stockfishMove, stockfishStatus } from "@/lib/stockfish-server";
+import { stockfishAnalyze, stockfishMove, stockfishStatus } from "@/lib/stockfish-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,19 +17,23 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { fen?: string; level?: string };
+  let body: { fen?: string; level?: string; analyze?: boolean };
   try {
-    body = (await request.json()) as { fen?: string; level?: string };
+    body = (await request.json()) as { fen?: string; level?: string; analyze?: boolean };
   } catch {
     return NextResponse.json({ ok: false, code: "error", message: "Bad request." }, { status: 400 });
   }
 
-  if (!body.fen || !body.level) {
+  if (!body.fen || (!body.level && !body.analyze)) {
     return NextResponse.json({ ok: false, code: "error", message: "Missing fen or level." }, { status: 400 });
   }
 
   try {
-    const move = await stockfishMove(body.fen, body.level);
+    if (body.analyze) {
+      const analysis = await stockfishAnalyze(body.fen);
+      return NextResponse.json({ ok: true, ...analysis, source: "binary" });
+    }
+    const move = await stockfishMove(body.fen, body.level ?? "exact");
     return NextResponse.json({ ok: true, ...move, source: "binary" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Stockfish failed.";

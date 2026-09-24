@@ -2,7 +2,7 @@ import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from "node:c
 import { existsSync } from "node:fs";
 import { sep } from "node:path";
 import { Chess } from "chess.js";
-import { isLevelId, levels, STOCKFISH_HINT, type LevelId } from "@/lib/levels";
+import { searchConfig, STOCKFISH_HINT, type SearchConfig } from "@/lib/levels";
 import { uciToSan } from "@/lib/uci";
 
 type Waiter = {
@@ -17,6 +17,7 @@ class UciProcess {
   private buffer = "";
   private waiters: Waiter[] = [];
   private chain: Promise<unknown> = Promise.resolve();
+  private infos: string[] = [];
 
   constructor(private path: string) {
     this.proc = spawn(path, [], { stdio: ["pipe", "pipe", "pipe"] });
@@ -41,6 +42,7 @@ class UciProcess {
   }
 
   private dispatch(line: string) {
+    if (line.startsWith("info ")) this.infos.push(line);
     const index = this.waiters.findIndex((waiter) => waiter.test(line));
     if (index < 0) return;
     const [waiter] = this.waiters.splice(index, 1);
@@ -82,25 +84,84 @@ class UciProcess {
     this.proc.kill();
   }
 
-  async bestMove(fen: string, levelId: LevelId) {
-    const level = levels[levelId];
+  private async prepare(config: SearchConfig, multipv: number) {
+    this.infos = [];
     this.send("ucinewgame");
     this.send("isready");
     await this.waitFor((line) => line === "readyok", 5000);
-    this.send(`setoption name UCI_LimitStrength value ${level.limitStrength ? "true" : "false"}`);
-    if (level.limitStrength) this.send(`setoption name UCI_Elo value ${level.elo}`);
-    this.send(`setoption name Skill Level value ${level.skill}`);
+    this.send(`setoption name MultiPV value ${multipv}`);
+    this.send(`setoption name UCI_LimitStrength value ${config.limitStrength ? "true" : "false"}`);
+    if (config.limitStrength) this.send(`setoption name UCI_Elo value ${config.elo}`);
+    this.send(`setoption name Skill Level value ${config.skill}`);
     this.send("isready");
     await this.waitFor((line) => line === "readyok", 5000);
+  }
+
+  async bestMove(fen: string, level: string) {
+    const config = searchConfig(level);
+    if (!config) throw new Error("Unknown level");
+    await this.prepare(config, 1);
     this.send(`position fen ${fen}`);
-    const pending = this.waitFor((line) => line.startsWith("bestmove"), level.movetime + 8000);
-    this.send(`go depth ${level.depth} movetime ${level.movetime}`);
+    const pending = this.waitFor((line) => line.startsWith("bestmove"), config.movetime + 12000);
+    this.send(`go depth ${config.depth} movetime ${config.movetime}`);
     const line = await pending;
     const uci = line.split(/\s+/)[1] ?? "";
     const san = uciToSan(fen, uci);
     if (!san) throw new Error("Stockfish returned no legal move");
-    return { uci, san };
+    return { uci, san, lines: parseLines(fen, this.infos) };
   }
+
+  async analyze(fen: string) {
+    const config: SearchConfig = {
+      skill: 20,
+      elo: 3200,
+      depth: 14,
+      movetime: 800,
+      limitStrength: false,
+    };
+    await this.prepare(config, 2);
+    this.send(`position fen ${fen}`);
+    const pending = this.waitFor((line) => line.startsWith("bestmove"), config.movetime + 8000);
+    this.send(`go depth ${config.depth} movetime ${config.movetime}`);
+    await pending;
+    return { lines: parseLines(fen, this.infos) };
+  }
+}
+
+export type ParsedLine = {
+  multipv: number;
+  depth: number;
+  cp: number | null;
+  mate: number | null;
+  uci: string;
+  san: string;
+};
+
+export function parseLines(fen: string, infos: string[]): ParsedLine[] {
+  const best = new Map<number, ParsedLine>();
+  for (const line of infos) {
+    if (!line.includes(" score ") || !line.includes(" pv ")) continue;
+    const parts = line.split(/\s+/);
+    const depthAt = parts.indexOf("depth");
+    const scoreAt = parts.indexOf("score");
+    const pvAt = parts.indexOf("pv");
+    const multiAt = parts.indexOf("multipv");
+    if (depthAt < 0 || scoreAt < 0 || pvAt < 0) continue;
+    const uci = parts[pvAt + 1] ?? "";
+    const san = uciToSan(fen, uci);
+    if (!san) continue;
+    const parsed: ParsedLine = {
+      multipv: multiAt >= 0 ? Number(parts[multiAt + 1]) : 1,
+      depth: Number(parts[depthAt + 1]),
+      cp: parts[scoreAt + 1] === "cp" ? Number(parts[scoreAt + 2]) : null,
+      mate: parts[scoreAt + 1] === "mate" ? Number(parts[scoreAt + 2]) : null,
+      uci,
+      san,
+    };
+    const previous = best.get(parsed.multipv);
+    if (!previous || parsed.depth >= previous.depth) best.set(parsed.multipv, parsed);
+  }
+  return [...best.values()].sort((a, b) => a.multipv - b.multipv);
 }
 
 type Slot = {
@@ -172,9 +233,16 @@ export function stockfishStatus() {
 }
 
 export async function stockfishMove(fen: string, level: string) {
-  if (!isLevelId(level)) throw new Error("Unknown level");
+  if (!searchConfig(level)) throw new Error("Unknown level");
   const chess = new Chess(fen);
   if (chess.isGameOver()) throw new Error("Game is over");
   const proc = await engine();
   return proc.enqueue(() => proc.bestMove(fen, level));
+}
+
+export async function stockfishAnalyze(fen: string) {
+  const chess = new Chess(fen);
+  if (chess.isGameOver()) return { lines: [] as ParsedLine[] };
+  const proc = await engine();
+  return proc.enqueue(() => proc.analyze(fen));
 }

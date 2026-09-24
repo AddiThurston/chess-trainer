@@ -1,3 +1,5 @@
+import { Chess } from "chess.js";
+
 export type OpeningLine = {
   id: string;
   name: string;
@@ -325,4 +327,24 @@ export const openings: Opening[] = [
 
 export function getOpening(id: string): Opening | undefined {
   return openings.find((opening) => opening.id === id);
+}
+
+/** Position after the moves every variation of this opening still shares. */
+export function openingTabiya(opening: Opening): string {
+  const sequences = opening.lines.map((line) => line.moves);
+  let shared = 0;
+  const first = sequences[0] ?? [];
+  while (shared < first.length && sequences.every((moves) => moves[shared] === first[shared])) {
+    shared += 1;
+  }
+  const chess = new Chess();
+  for (let index = 0; index < shared; index += 1) chess.move(first[index]);
+  return chess.fen();
+}
+
+export function bookMove(history: string[], san: string): boolean {
+  const next = [...history, san];
+  return openings.some((opening) =>
+    opening.lines.some((line) => next.every((move, index) => line.moves[index] === move)),
+  );
 }

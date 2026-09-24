@@ -14,6 +14,7 @@ import {
   resetSolvedTactics,
   subscribeTactics,
 } from "@/lib/storage";
+import { defenseReply, moveKeepsWin, winAchieved } from "@/lib/puzzle";
 
 type Puzzle = (typeof tacticsData)[number];
 
@@ -25,9 +26,19 @@ type Session = {
   misses: number;
   note: string;
   error: string | null;
+  fen: string | null;
+  lastMove: { from: string; to: string } | null;
 };
 
-const freshSession: Session = { id: "", step: 0, misses: 0, note: "Find the move.", error: null };
+const freshSession: Session = {
+  id: "",
+  step: 0,
+  misses: 0,
+  note: "Find the move. Any move that keeps the win is accepted.",
+  error: null,
+  fen: null,
+  lastMove: null,
+};
 
 function replay(puzzle: Puzzle, step: number) {
   const chess = new Chess(puzzle.fen);
@@ -83,7 +94,9 @@ export function TacticsTrainer() {
 
   const puzzle = puzzles[index];
   const active = session.id === puzzle.id ? session : freshSession;
-  const played = replay(puzzle, active.step);
+  const played = active.fen
+    ? { fen: active.fen, lastMove: active.lastMove, error: null as string | null }
+    : replay(puzzle, active.step);
   const error = active.error ?? played.error;
   const side = puzzle.side === "b" ? "b" : "w";
   const solvedThis = solved.includes(puzzle.id);
@@ -94,55 +107,80 @@ export function TacticsTrainer() {
   }
 
   function onMove(move: { from: string; to: string; promotion?: string }) {
-    if (error || solvedThis || active.step >= puzzle.solution.length) return false;
-    const expectedSan = puzzle.solution[active.step];
+    if (error || solvedThis) return false;
     const chess = new Chess(played.fen);
-    let expected;
-    try {
-      expected = chess.move(expectedSan);
-    } catch {
-      setSession({ ...active, id: puzzle.id, error: "The solution line could not be played." });
-      return false;
-    }
-    if (!expected) return false;
-    const same =
-      expected.from === move.from &&
-      expected.to === move.to &&
-      (expected.promotion ?? undefined) === (move.promotion ?? undefined);
-    if (!same) {
+    if (chess.turn() !== side) return false;
+    if (!moveKeepsWin(puzzle, played.fen, move.from, move.to, move.promotion)) {
       const nextMisses = active.misses + 1;
+      const book = puzzle.solution[active.step];
       setSession({
+        ...active,
         id: puzzle.id,
-        step: active.step,
         misses: nextMisses,
         error: null,
-        note: nextMisses >= 2 ? `${puzzle.comment} The move is ${expected.san}.` : puzzle.comment,
+        note: nextMisses >= 2 && book ? `${puzzle.comment} One winning move is ${book}.` : puzzle.comment,
       });
       return false;
     }
 
-    let nextStep = active.step + 1;
-    if (nextStep < puzzle.solution.length && chess.turn() !== side) {
-      let reply;
+    let playedMove;
+    try {
+      playedMove = chess.move({
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion as "q" | "r" | "b" | "n" | undefined,
+      });
+    } catch {
+      return false;
+    }
+    if (!playedMove) return false;
+
+    const bookSan = puzzle.solution[active.step];
+    const onBook = playedMove.san === bookSan || playedMove.san.replace("#", "") === bookSan?.replace("#", "");
+    let nextStep = onBook ? active.step + 1 : active.step;
+    if (chess.turn() !== side && !chess.isGameOver()) {
       try {
-        reply = chess.move(puzzle.solution[nextStep]);
+        if (onBook && nextStep < puzzle.solution.length) {
+          const reply = chess.move(puzzle.solution[nextStep]);
+          if (!reply) throw new Error("miss");
+          nextStep += 1;
+        } else {
+          const reply = defenseReply(puzzle, chess.fen());
+          if (reply) {
+            const answered = chess.move({ from: reply.from, to: reply.to });
+            if (!answered) throw new Error("miss");
+          }
+        }
       } catch {
-        reply = null;
-      }
-      if (!reply) {
-        setSession({ ...active, id: puzzle.id, error: "The puzzle reply could not be played." });
+        setSession({ ...freshSession, id: puzzle.id, error: "The puzzle reply could not be played." });
         return false;
       }
-      nextStep += 1;
     }
 
-    if (nextStep >= puzzle.solution.length || chess.isCheckmate()) {
+    const done = chess.isCheckmate() || winAchieved(puzzle, chess.fen()) || (onBook && nextStep >= puzzle.solution.length);
+    if (done) {
       markTacticSolved(puzzle.id);
       setCursor(index);
-      setSession({ id: puzzle.id, step: nextStep, misses: 0, note: puzzle.comment, error: null });
+      setSession({
+        id: puzzle.id,
+        step: puzzle.solution.length,
+        misses: 0,
+        note: puzzle.comment,
+        error: null,
+        fen: chess.fen(),
+        lastMove: { from: playedMove.from, to: playedMove.to },
+      });
       return true;
     }
-    setSession({ id: puzzle.id, step: nextStep, misses: 0, note: "Keep going.", error: null });
+    setSession({
+      id: puzzle.id,
+      step: nextStep,
+      misses: 0,
+      note: "Keep going.",
+      error: null,
+      fen: chess.fen(),
+      lastMove: { from: playedMove.from, to: playedMove.to },
+    });
     return true;
   }
 
@@ -152,7 +190,7 @@ export function TacticsTrainer() {
         fen={played.fen}
         orientation={side === "w" ? "white" : "black"}
         playerColor={side}
-        interactive={!error && !solvedThis && active.step < puzzle.solution.length}
+        interactive={!error && !solvedThis && new Chess(played.fen).turn() === side}
         lastMove={played.lastMove}
         boardId={`tactic-${puzzle.id}`}
         onMove={onMove}

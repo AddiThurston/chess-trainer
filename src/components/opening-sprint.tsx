@@ -2,8 +2,13 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Chess } from "chess.js";
 import { getOpening } from "@/data/openings";
+import { EvalBar } from "@/components/eval-bar";
+import { CoachToggles, GradeLine, useCoachOptions, usePositionEval } from "@/components/coach-options";
+import { ratePlayedMove } from "@/lib/rate-move";
+import type { GradeName } from "@/lib/eval";
 import { TrainerBoard } from "@/components/trainer-board";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,8 +35,9 @@ export function OpeningSprint({
   lineId: string;
   color: "white" | "black";
 }) {
+  const router = useRouter();
   const opening = getOpening(openingId);
-  const line = opening?.lines.find((item) => item.id === lineId);
+  const line = opening?.lines.find((item) => item.id === lineId) ?? opening?.lines[0];
   const key = line ? lineKey(openingId, line.id, color) : "";
   const user = color === "white" ? "w" : "b";
   const stats = useSyncExternalStore(subscribeOpeningStats, loadOpeningStats, emptyOpeningSnapshot);
@@ -45,6 +51,9 @@ export function OpeningSprint({
   const [hint, setHint] = useState<{ from: string; to: string } | null>(null);
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [grades, setGrades] = useState<{ san: string; grade: GradeName }[]>([]);
+  const { showEval, rateMoves, toggleEval, toggleRate } = useCoachOptions();
+  const whiteCp = usePositionEval(fen, showEval);
 
   const finished = Boolean(line && ply >= line.moves.length);
   const turn = new Chess(fen).turn();
@@ -59,6 +68,7 @@ export function OpeningSprint({
     setHint(null);
     setLastMove(null);
     setError(null);
+    setGrades([]);
     setStatus(color === "white" ? "Your move." : "The book is answering…");
   }
 
@@ -137,6 +147,12 @@ export function OpeningSprint({
     setFen(chess.fen());
     setPly((current) => current + 1);
     setStatus("Played.");
+    if (rateMoves) {
+      const uci = `${move.from}${move.to}${move.promotion ?? ""}`;
+      void ratePlayedMove(fen, uci, true).then((grade) => {
+        setGrades((current) => [...current, { san: expected.san, grade }]);
+      });
+    }
     return true;
   }
 
@@ -154,22 +170,53 @@ export function OpeningSprint({
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,640px)_minmax(260px,1fr)]">
-      <TrainerBoard
-        fen={fen}
-        orientation={color}
-        playerColor={user}
-        interactive={yourTurn}
-        lastMove={lastMove}
-        hintMove={hint}
-        boardId={`sprint-${line.id}`}
-        onMove={onMove}
-      />
+      <div className="flex items-stretch gap-2">
+        {showEval ? <EvalBar whiteCp={whiteCp} orientation={color} /> : null}
+        <div className="min-w-0 flex-1">
+          <TrainerBoard
+            fen={fen}
+            orientation={color}
+            playerColor={user}
+            interactive={yourTurn}
+            lastMove={lastMove}
+            hintMove={hint}
+            boardId={`sprint-${line.id}`}
+            onMove={onMove}
+          />
+        </div>
+      </div>
       <Card>
         <CardHeader>
           <p className="text-sm text-muted-foreground">{opening.name}</p>
           <CardTitle className="font-heading text-2xl">{line.name}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1 text-sm">
+            Variation
+            <select
+              className="min-h-11 rounded-lg border border-input bg-background px-3"
+              value={line.id}
+              onChange={(event) => router.push(`/openings/${opening.id}?line=${event.target.value}&color=${color}`)}
+            >
+              {opening.lines.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex gap-2">
+            {(["white", "black"] as const).map((choice) => (
+              <Button
+                key={choice}
+                variant={color === choice ? "default" : "outline"}
+                className="min-h-11 flex-1 capitalize"
+                onClick={() => router.push(`/openings/${opening.id}?line=${line.id}&color=${choice}`)}
+              >
+                {choice}
+              </Button>
+            ))}
+          </div>
           <p className="text-sm text-muted-foreground">{line.note}</p>
           <div className="flex flex-wrap gap-2">
             <Badge className="capitalize">{color}</Badge>
@@ -181,6 +228,14 @@ export function OpeningSprint({
           {!finished && !yourTurn && !error ? (
             <p className="text-sm text-muted-foreground">The book is answering…</p>
           ) : null}
+          {rateMoves && grades.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {grades.slice(-4).map((item, index) => (
+                <GradeLine key={`${item.san}-${index}`} san={item.san} grade={item.grade} />
+              ))}
+            </div>
+          ) : null}
+          <CoachToggles showEval={showEval} rateMoves={rateMoves} onEval={toggleEval} onRate={toggleRate} />
           {error ? (
             <p className="rounded-lg bg-destructive/15 px-3 py-2 text-sm">{error}</p>
           ) : null}
