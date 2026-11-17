@@ -42,3 +42,4 @@ next-env.d.ts
 
 # bundled at dev/build time from the stockfish package
 /public/engine/
+!.env.example

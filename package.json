@@ -9,16 +9,21 @@
     "prebuild": "node scripts/copy-stockfish.mjs",
     "start": "next start -H 0.0.0.0 -p 43117",
     "lint": "eslint",
-    "validate": "node scripts/validate-chess.mjs"
+    "validate": "node scripts/validate-chess.mjs",
+    "test:tree": "node scripts/test-move-tree.mjs",
+    "test:inputs": "node --import ./scripts/alias.mjs scripts/test-inputs.mjs",
+    "worker": "node --import ./scripts/alias.mjs src/worker.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@mliebelt/pgn-parser": "^1.4.19",
     "chess.js": "^1.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.4.0",
     "lucide-react": "^1.47.0",
     "next": "16.3.6",
+    "pg": "^8.23.1",
     "react": "19.2.8",
     "react-chessboard": "^5.12.1",
     "react-dom": "19.2.8",
@@ -30,6 +35,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

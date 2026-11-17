@@ -22,6 +22,12 @@ RUN useradd --system --uid 1001 --create-home nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
+# The import worker runs the TypeScript source directly; the standalone output already holds its packages.
+COPY --from=builder /app/src/lib ./src/lib
+COPY --from=builder /app/src/worker.ts ./src/worker.ts
+COPY --from=builder /app/scripts/alias.mjs ./scripts/alias.mjs
+COPY --from=builder /app/data ./data
+RUN mkdir -p /app/.lichess-cache && chown nextjs:nextjs /app/.lichess-cache
 USER nextjs
 EXPOSE 43117
 CMD ["node", "server.js"]

@@ -121,7 +121,7 @@ async function wasmSearch(fen: string, config: SearchConfig, multipv: number) {
 }
 
 function linesFromInfos(fen: string, infos: string[]) {
-  const best = new Map<number, { uci: string; san: string; cp: number | null; mate: number | null; depth: number }>();
+  const best = new Map<number, { uci: string; san: string; cp: number | null; mate: number | null; depth: number; multipv: number }>();
   for (const line of infos) {
     if (!line.includes(" score ") || !line.includes(" pv ")) continue;
     const parts = line.split(/\s+/);
