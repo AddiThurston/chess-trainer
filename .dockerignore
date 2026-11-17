@@ -4,3 +4,4 @@ node_modules
 public/engine
 *.md
 !README.md
+.env

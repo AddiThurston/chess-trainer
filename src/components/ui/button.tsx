@@ -7,7 +7,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        default:
+          "bg-primary font-semibold text-primary-foreground shadow-[0_3px_0_var(--primary-edge)] hover:brightness-110 active:not-aria-[haspopup]:translate-y-0.5 active:shadow-[0_1px_0_var(--primary-edge)]",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

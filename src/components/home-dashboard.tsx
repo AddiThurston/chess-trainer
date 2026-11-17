@@ -2,11 +2,9 @@
 
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Chess } from "chess.js";
 import { BookOpen, Crown, Puzzle, Swords } from "lucide-react";
-import { TrainerBoard } from "@/components/trainer-board";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { StaticBoard } from "@/components/static-board";
+import { buttonVariants } from "@/components/ui/button";
 import {
   emptyOpeningSnapshot,
   emptyTacticSnapshot,
@@ -18,13 +16,17 @@ import {
 } from "@/lib/storage";
 import { openings } from "@/data/openings";
 import tactics from "@/data/tactics.json";
+import { cn } from "@/lib/utils";
+
+// The Italian after 5.d3: a position most courses on 1.e4 e5 pass through.
+const HERO_FEN = "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2PP1N2/PP3PPP/RNBQK2R b KQkq - 0 5";
 
 const modes = [
   {
     href: "/openings",
     title: "Opening sprints",
     icon: BookOpen,
-    copy: "Pick a line and a color. You play your moves. The book answers at once.",
+    copy: "Pick a line and a color. You play your moves and the book answers at once.",
   },
   {
     href: "/endgames",
@@ -60,44 +62,51 @@ export function HomeDashboard() {
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] lg:items-start">
-      <div>
-        <p className="text-sm tracking-wide text-primary uppercase">Evening session</p>
-        <h1 className="mt-2 font-heading text-4xl tracking-tight text-balance sm:text-5xl">The board is set.</h1>
-        <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          Four ways to work tonight: drill a book line until it is clean, finish an ending, solve a tactic, or sit down for a game.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Badge variant="secondary">Best clean streak {bestStreak}</Badge>
-          <Badge variant="outline">
-            {solved.length} of {tactics.length} tactics solved
-          </Badge>
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8 lg:py-12">
+      <section className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(260px,400px)]">
+        <div>
+          <h1 className="font-heading text-5xl leading-[1.02] font-extrabold text-balance sm:text-6xl">
+            Know what you play before move one.
+          </h1>
+          <p className="mt-5 max-w-lg text-lg text-muted-foreground">
+            Load an opening course, walk its lines on the board, and keep the positions you miss coming back until
+            they stick.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link href="/courses" className={cn(buttonVariants(), "h-12 px-6 text-base")}>
+              Browse courses
+            </Link>
+            <Link href="/play" className={cn(buttonVariants({ variant: "secondary" }), "h-12 px-6 text-base")}>
+              Play the bot
+            </Link>
+          </div>
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl bg-card p-3 shadow-[0_6px_0_rgba(0,0,0,0.25)]">
+          <StaticBoard fen={HERO_FEN} />
+        </div>
+      </section>
+
+      <section className="mt-14">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="font-heading text-2xl font-bold">Practice</h2>
+          <p className="text-sm text-muted-foreground">
+            Best clean streak {bestStreak}. {solved.length} of {tactics.length} tactics solved.
+          </p>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {modes.map((mode) => (
-            <Link key={mode.href} href={mode.href} className="block h-full">
-              <Card className="h-full transition hover:ring-primary/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-heading text-xl">
-                    <mode.icon className="size-4 text-primary" />
-                    {mode.title}
-                  </CardTitle>
-                  <CardDescription className="text-base leading-relaxed">{mode.copy}</CardDescription>
-                </CardHeader>
-              </Card>
+            <Link
+              key={mode.href}
+              href={mode.href}
+              className="rounded-xl bg-card p-5 ring-1 ring-foreground/5 hover:bg-popover"
+            >
+              <mode.icon className="size-6 text-primary" />
+              <h3 className="mt-3 font-heading text-lg font-bold">{mode.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{mode.copy}</p>
             </Link>
           ))}
         </div>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-heading text-xl">Green and cream</CardTitle>
-          <CardDescription>The board stays classical. The room stays dark.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TrainerBoard fen={new Chess().fen()} interactive={false} boardId="home" onMove={() => false} />
-        </CardContent>
-      </Card>
+      </section>
     </div>
   );
 }

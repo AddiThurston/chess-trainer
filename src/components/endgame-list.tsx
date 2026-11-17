@@ -6,8 +6,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 export function EndgameList() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <p className="text-sm tracking-wide text-primary uppercase">Endgames</p>
-      <h1 className="mt-1 font-heading text-4xl tracking-tight">A few positions worth knowing cold.</h1>
+      <h1 className="font-heading text-4xl tracking-tight">A few positions worth knowing cold.</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         Each card is a legal snapshot of that ending. Open it to play a position drawn from the set, against full-strength Stockfish.
       </p>

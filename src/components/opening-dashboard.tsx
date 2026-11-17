@@ -8,8 +8,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 export function OpeningDashboard() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <p className="text-sm tracking-wide text-primary uppercase">Opening sprints</p>
-      <h1 className="mt-1 font-heading text-4xl tracking-tight">Learn the move, then play it.</h1>
+      <h1 className="font-heading text-4xl tracking-tight">Learn the move, then play it.</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         The board shows the position every variation of that opening still shares. Open it, then pick a line from the menu.
       </p>

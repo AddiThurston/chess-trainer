@@ -1,22 +1,36 @@
-# Chess Trainer
+# Tabiya (chess-trainer)
 
-A home chess trainer for Addison Thurston: opening sprints, endgame drills, tactics, and a Stockfish bot. It is meant to sit behind a reverse proxy on addithurston.com.
+A chess trainer for Addison Thurston: opening courses stored as move trees, opening sprints, endgame drills, tactics, and a Stockfish bot. It is meant to sit behind a reverse proxy on addithurston.com. The plan for the course features is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Run locally
 
+Courses, accounts, and imports need Postgres. Sprints, endgames, tactics, and the bot run without it.
+
 ```bash
 npm install
+export DATABASE_URL=postgres://chess:change-me@127.0.0.1:5432/chess
+export ADMIN_USERNAME=addi ADMIN_PASSWORD=change-me-too
 npm run dev
+```
+
+The tables are created on the first database query, and the admin account is created from `ADMIN_USERNAME` and `ADMIN_PASSWORD` if it does not exist yet.
+
+Lichess imports run in a separate worker process. Start it in a second terminal with the same `DATABASE_URL`:
+
+```bash
+npm run worker
 ```
 
 Open http://127.0.0.1:43117. The dev server listens on `0.0.0.0:43117`.
 
 `npm run dev` copies the bundled Stockfish lite engine into `public/engine` before it starts. If no system Stockfish binary is installed, the bot and the endgames still play through that browser engine. The strengths still differ (skill, depth, and think time).
 
-Check the opening lines and puzzles:
+Check the opening lines and puzzles, and the PGN move-tree round trip:
 
 ```bash
 npm run validate
+npm run test:tree
+npm run test:inputs
 ```
 
 Production, without Docker:
@@ -57,10 +71,17 @@ Bot strengths map to real UCI limits:
 ## Docker
 
 ```bash
+cp .env.example .env   # then set the three passwords and names in it
 docker compose up --build -d
 ```
 
-The image installs Debian's Stockfish package and sets `STOCKFISH_PATH=/usr/games/stockfish`. The app listens on port 43117 inside the container.
+Compose runs the app, the import worker, and Postgres 17. Two named volumes hold the database (`db-data`) and the raw PGN that the worker fetched from Lichess (`lichess-cache`). The image installs Debian's Stockfish package and sets `STOCKFISH_PATH=/usr/games/stockfish`. The app listens on port 43117 inside the container.
+
+## Importing from Lichess
+
+Sign in as the admin and open Import. Paste study links, study IDs, and usernames in any mix, or upload a text file of them, and set which titles to keep. The worker fetches one thing at a time, and the progress page shows what was skipped and why. When it finishes, Chapters lists every chapter with its opening and side: tick some and merge them into one course, or make one course per chapter. Imported courses stay private until you record the author's permission under Authors.
+
+The opening names come from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0), copied into `data/openings`.
 
 ## Reverse proxy
 
@@ -89,4 +110,4 @@ server {
 }
 ```
 
-Scores stay in the browser (`localStorage`). There are no accounts.
+Sprint and tactic scores stay in the browser (`localStorage`). Courses live in Postgres. Only the admin account exists so far; sign-up comes with the accounts milestone.
